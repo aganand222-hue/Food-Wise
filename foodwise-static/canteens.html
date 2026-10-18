@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Compare Canteens</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Compare canteens</h1>
+<p>How the canteens stack up on price, calories and nutrition, based on the items we recorded at each one.</p>
+
+<div class="card">
+    <h2>At a glance</h2>
+    <div class="table-scroll">
+        <table class="compare-table" id="summaryTable"></table>
+    </div>
+    <p class="small-note" id="priceNote" style="margin-top:10px;"></p>
+</div>
+
+<div class="results-grid">
+    <div class="card">
+        <h2>Average calories per item</h2>
+        <canvas id="calChart" aria-label="Bar chart of average calories per item for each canteen" role="img"></canvas>
+    </div>
+    <div class="card">
+        <h2>Average protein, carbs and fat (g)</h2>
+        <canvas id="macroChart" aria-label="Bar chart of average protein, carbs and fat for each canteen" role="img"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Top three by nutrition score</h2>
+    <p class="small-note">See <a href="healthiest.html">how the score works</a>.</p>
+    <div class="results-grid" id="topPicks"></div>
+</div>
+
+<div class="card">
+    <h2>Dishes more than one canteen serves</h2>
+    <div class="table-scroll">
+        <table id="commonTable"></table>
+    </div>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const COLORS = ['#2e7d32', '#d4a017', '#3f7cac', '#9c5a8f'];
+
+function avg(arr, fn) { return arr.reduce(function (s, x) { return s + fn(x); }, 0) / arr.length; }
+function pickMin(arr, fn) { return arr.reduce(function (a, b) { return fn(b) < fn(a) ? b : a; }); }
+function pickMax(arr, fn) { return arr.reduce(function (a, b) { return fn(b) > fn(a) ? b : a; }); }
+function one(n) { return (Math.round(n * 10) / 10).toString(); }
+
+const stats = colleges.map(function (c) {
+    const items = foods.filter(function (f) { return f.college === c; });
+    const priced = items.filter(function (f) { return f.price !== null; });
+    return { college: c, items: items, priced: priced };
+});
+
+// ---------- Summary table ----------
+const rows = [
+    ['Items on the menu', function (s) { return s.items.length; }],
+    ['Prices confirmed', function (s) { return s.priced.length + ' of ' + s.items.length; }],
+    ['Average price', function (s) {
+        return s.priced.length ? '\u20B9' + Math.round(avg(s.priced, function (f) { return f.price; })) : 'Not enough prices yet';
+    }],
+    ['Price range', function (s) {
+        if (!s.priced.length) return '-';
+        const lo = pickMin(s.priced, function (f) { return f.price; }).price;
+        const hi = pickMax(s.priced, function (f) { return f.price; }).price;
+        return lo === hi ? '\u20B9' + lo : '\u20B9' + lo + ' to \u20B9' + hi;
+    }],
+    ['Average calories', function (s) { return Math.round(avg(s.items, function (f) { return f.calories; })) + ' kcal'; }],
+    ['Average protein', function (s) { return one(avg(s.items, function (f) { return f.protein; })) + ' g'; }],
+    ['Average fat', function (s) { return one(avg(s.items, function (f) { return f.fat; })) + ' g'; }],
+    ['Average nutrition score', function (s) { return Math.round(avg(s.items, healthScore)) + ' / 100'; }],
+    ['Lowest-calorie item', function (s) {
+        const f = pickMin(s.items, function (x) { return x.calories; });
+        return esc(shortName(f)) + ' (' + f.calories + ' kcal)';
+    }],
+    ['Highest-protein item', function (s) {
+        const f = pickMax(s.items, function (x) { return x.protein; });
+        return esc(shortName(f)) + ' (' + f.protein + ' g)';
+    }],
+    ['Highest nutrition score', function (s) {
+        const f = pickMax(s.items, healthScore);
+        return esc(shortName(f)) + ' (' + healthScore(f) + ')';
+    }],
+    ['Most sold, as reported', function (s) {
+        const t = topSellers[s.college];
+        return t ? t.map(esc).join(', ') : 'Not recorded';
+    }]
+];
+
+document.getElementById('summaryTable').innerHTML =
+    '<thead><tr><th></th>' + stats.map(function (s) { return '<th>' + esc(s.college) + '</th>'; }).join('') + '</tr></thead>' +
+    '<tbody>' + rows.map(function (r) {
+        return '<tr><td>' + r[0] + '</td>' + stats.map(function (s) { return '<td>' + r[1](s) + '</td>'; }).join('') + '</tr>';
+    }).join('') + '</tbody>';
+
+const missing = stats.filter(function (s) { return s.priced.length < s.items.length; });
+document.getElementById('priceNote').textContent = missing.length
+    ? 'Average price and price range only use the prices we could confirm, so they will shift as the missing prices are filled in.'
+    : '';
+
+// ---------- Charts ----------
+new Chart(document.getElementById('calChart'), {
+    type: 'bar',
+    data: {
+        labels: stats.map(function (s) { return s.college; }),
+        datasets: [{
+            label: 'Average calories',
+            data: stats.map(function (s) { return Math.round(avg(s.items, function (f) { return f.calories; })); }),
+            backgroundColor: stats.map(function (s, i) { return COLORS[i % COLORS.length]; })
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'kcal' } } } }
+});
+
+new Chart(document.getElementById('macroChart'), {
+    type: 'bar',
+    data: {
+        labels: ['Protein', 'Carbs', 'Fat'],
+        datasets: stats.map(function (s, i) {
+            return {
+                label: s.college,
+                backgroundColor: COLORS[i % COLORS.length],
+                data: [
+                    Math.round(avg(s.items, function (f) { return f.protein; }) * 10) / 10,
+                    Math.round(avg(s.items, function (f) { return f.carbs; }) * 10) / 10,
+                    Math.round(avg(s.items, function (f) { return f.fat; }) * 10) / 10
+                ]
+            };
+        })
+    },
+    options: { scales: { y: { beginAtZero: true, title: { display: true, text: 'grams' } } } }
+});
+
+// ---------- Top three per canteen ----------
+document.getElementById('topPicks').innerHTML = stats.map(function (s) {
+    const top = s.items.slice().sort(function (a, b) { return healthScore(b) - healthScore(a); }).slice(0, 3);
+    return '<div><h3 style="margin-top:0;">' + esc(s.college) + '</h3><ul class="mini-list">' +
+        top.map(function (f) {
+            return '<li>' + foodImg(f, 'food-img thumb') +
+                '<div><div style="font-weight:600;">' + esc(f.name) + '</div>' +
+                '<div class="small-note">Score ' + healthScore(f) + ' / 100, ' + f.calories + ' kcal, ' + f.protein + ' g protein</div></div></li>';
+        }).join('') + '</ul></div>';
+}).join('');
+
+// ---------- Dishes served by more than one canteen ----------
+const byDish = {};
+foods.forEach(function (f) { (byDish[f.img] = byDish[f.img] || []).push(f); });
+const shared = Object.keys(byDish).filter(function (k) {
+    const set = {}; byDish[k].forEach(function (f) { set[f.college] = true; });
+    return Object.keys(set).length > 1;
+});
+
+if (shared.length === 0) {
+    document.getElementById('commonTable').outerHTML = '<p>No dishes appear on more than one menu yet.</p>';
+} else {
+    document.getElementById('commonTable').innerHTML =
+        '<thead><tr><th>Dish</th>' + colleges.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead>' +
+        '<tbody>' + shared.map(function (k) {
+            const first = byDish[k][0];
+            return '<tr><td>' + foodImg(first, 'food-img thumb') + '<div style="font-weight:600; margin-top:6px;">' + esc(shortName(first)) + '</div></td>' +
+                colleges.map(function (c) {
+                    const f = byDish[k].find(function (x) { return x.college === c; });
+                    if (!f) return '<td>Not on this menu</td>';
+                    return '<td><div>' + esc(f.name) + '</div><div>' + priceHtml(f) + '</div>' +
+                        '<div class="small-note">' + f.calories + ' kcal, ' + f.protein + ' g protein, ' + f.fat + ' g fat</div></td>';
+                }).join('') + '</tr>';
+        }).join('') + '</tbody>';
+}
+</script>
+</body>
+</html>

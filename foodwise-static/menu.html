@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Canteen Menu</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Canteen Food Menu</h1>
+<p>Items available at each canteen, collected from the daily menu boards.</p>
+
+<div id="collegeTabs"></div>
+
+<h2 id="collegeTitle"></h2>
+<div class="food-grid" id="menuGrid"></div>
+<p class="small-note" style="margin-top:16px;">
+    Items marked "Price to be confirmed" had no price visible on the menu board during data collection.
+    Calories are approximate, for one serving as listed.
+</p>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/college-tabs.js"></script>
+<script>
+function render(college) {
+    document.getElementById('collegeTitle').textContent = college;
+    const items = foods.filter(function (f) { return f.college === college; });
+    document.getElementById('menuGrid').innerHTML = items.map(function (f) {
+        return '<article class="food-card">' +
+            foodImg(f) +
+            '<div class="food-card-body">' +
+                '<h3>' + esc(f.name) + '</h3>' +
+                '<div class="food-meta">' + priceHtml(f) +
+                    '<span class="chip">' + f.calories + ' kcal</span></div>' +
+                (f.price_note ? '<div class="note">' + esc(f.price_note) + '</div>' : '') +
+            '</div></article>';
+    }).join('');
+}
+const initial = renderCollegeTabs('collegeTabs', render);
+render(initial);
+</script>
+</body>
+</html>

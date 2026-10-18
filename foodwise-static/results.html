@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Survey Results</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Survey Results</h1>
+<p id="responseCount">Loading responses...</p>
+
+<div id="resultsContent"></div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+async function loadResults() {
+    if (SUPABASE_NOT_CONFIGURED) {
+        document.getElementById('responseCount').textContent = '';
+        document.getElementById('resultsContent').innerHTML =
+            '<div class="card error-box">' + SUPABASE_CONFIG_MESSAGE + '</div>';
+        return;
+    }
+
+    let rows, error;
+    try {
+        const result = await supabaseClient
+            .from('feedback')
+            .select('*')
+            .order('submitted_at', { ascending: false });
+        rows = result.data;
+        error = result.error;
+    } catch (err) {
+        error = err;
+    }
+
+    if (error) {
+        document.getElementById('responseCount').textContent = '';
+        document.getElementById('resultsContent').innerHTML =
+            '<div class="card error-box">Could not load results: ' +
+            (error && error.message ? error.message : 'unknown error') +
+            '. ' + (/invalid path/i.test((error && error.message) || '')
+                ? 'Your SUPABASE_URL in js/supabase-config.js should end at ".supabase.co" with nothing after it (remove any "/rest/v1/").'
+                : 'Check the browser console (F12), and confirm supabase-config.js and supabase-schema.sql are set up correctly.') +
+            '</div>';
+        console.error(error);
+        return;
+    }
+
+    const total = rows.length;
+    document.getElementById('responseCount').textContent =
+        total + (total === 1 ? ' response collected so far.' : ' responses collected so far.');
+
+    if (total === 0) {
+        document.getElementById('resultsContent').innerHTML =
+            '<div class="card"><p>No feedback submitted yet. <a href="feedback.html">Be the first to respond.</a></p></div>';
+        return;
+    }
+
+    const easeCounts = { "Very Easy": 0, "Easy": 0, "Not Easy": 0 };
+    const satisfactionCounts = { "Very Satisfied": 0, "Satisfied": 0, "Not Satisfied": 0 };
+    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const featureCounts = {
+        "Canteen Food Menu": 0,
+        "Nutritional Analysis": 0,
+        "Advantages of Canteen Food": 0,
+        "Ingredients": 0,
+        "Health Awareness": 0,
+        "Food Comparison": 0,
+        "Healthiest Items": 0,
+        "Calorie Calculator": 0,
+        "Compare Canteens": 0,
+        "Search": 0,
+        "Food Photos": 0
+    };
+    const suggestions = [];
+
+    rows.forEach(row => {
+        if (row.ease_of_use in easeCounts) easeCounts[row.ease_of_use]++;
+        if (row.satisfaction in satisfactionCounts) satisfactionCounts[row.satisfaction]++;
+        if (row.design_rating in ratingCounts) ratingCounts[row.design_rating]++;
+        (row.liked_features || '').split(',').map(s => s.trim()).forEach(f => {
+            if (f in featureCounts) featureCounts[f]++;
+        });
+        if (row.suggestions) suggestions.push(row.suggestions);
+    });
+
+    document.getElementById('resultsContent').innerHTML = `
+        <div class="results-grid">
+            <div class="card"><h2>Ease of use</h2><canvas id="easeChart"></canvas></div>
+            <div class="card"><h2>Overall satisfaction</h2><canvas id="satisfactionChart"></canvas></div>
+            <div class="card"><h2>Design rating (1-5)</h2><canvas id="ratingChart"></canvas></div>
+            <div class="card" style="grid-column: 1 / -1;"><h2>Most liked features</h2><canvas id="featureChart"></canvas></div>
+        </div>
+        <div class="card">
+            <h2>Suggestions from students</h2>
+            ${suggestions.length === 0 ? '<p>No written suggestions yet.</p>' :
+              '<ul>' + suggestions.slice(0, 20).map(s => `<li>${s.replace(/</g,'&lt;')}</li>`).join('') + '</ul>'}
+        </div>
+    `;
+
+    new Chart(document.getElementById('easeChart'), {
+        type: 'pie',
+        data: { labels: Object.keys(easeCounts), datasets: [{ data: Object.values(easeCounts), backgroundColor: ['#2e7d32', '#66bb6a', '#c8e6c9'] }] }
+    });
+    new Chart(document.getElementById('satisfactionChart'), {
+        type: 'pie',
+        data: { labels: Object.keys(satisfactionCounts), datasets: [{ data: Object.values(satisfactionCounts), backgroundColor: ['#2e7d32', '#66bb6a', '#c8e6c9'] }] }
+    });
+    new Chart(document.getElementById('ratingChart'), {
+        type: 'bar',
+        data: { labels: Object.keys(ratingCounts), datasets: [{ label: 'Responses', data: Object.values(ratingCounts), backgroundColor: '#2e7d32' }] },
+        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+    new Chart(document.getElementById('featureChart'), {
+        type: 'bar',
+        indexAxis: 'y',
+        data: { labels: Object.keys(featureCounts), datasets: [{ label: 'Votes', data: Object.values(featureCounts), backgroundColor: '#2e7d32' }] },
+        options: { aspectRatio: 2.6, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+}
+loadResults();
+</script>
+</body>
+</html>

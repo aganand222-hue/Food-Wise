@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Healthiest Items</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Healthiest items</h1>
+<p>Every canteen item, ranked by a simple nutrition score. A higher score means more protein for the calories and less fat. It is a quick guide, not a verdict: no food here is off limits, and items lower down are simply better enjoyed now and then.</p>
+
+<div id="collegeTabs"></div>
+
+<div class="card toolbar">
+    <label for="sortBy" class="field-label">Rank by</label>
+    <select id="sortBy" class="field-select">
+        <option value="score">Nutrition score</option>
+        <option value="protein">Most protein</option>
+        <option value="calories">Fewest calories</option>
+        <option value="fat">Least fat</option>
+    </select>
+</div>
+
+<div class="card">
+    <ol class="rank-list" id="rankList"></ol>
+</div>
+
+<details class="card">
+    <summary>How the score works</summary>
+    <p>The score is out of 100 and uses only the numbers in our nutrition table:</p>
+    <ul>
+        <li><strong>Protein for the calories (50 points).</strong> 5 g of protein per 100 calories earns full marks.</li>
+        <li><strong>Share of calories from fat (30 points).</strong> The lower the share, the more points. Items where fat supplies 45% or more of the calories earn none.</li>
+        <li><strong>Lightness (20 points).</strong> Items up to 350 calories earn full marks, fading to zero at 500 calories.</li>
+        <li>Items with under 2 g of protein, such as cold drinks, have their score halved because their calories bring little nutrition.</li>
+    </ul>
+    <p class="small-note">Vitamins, minerals, fibre and sugar are not part of the score, and all values are approximate. This is an awareness tool, not medical or dietary advice.</p>
+</details>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/college-tabs.js"></script>
+<script>
+let currentCollege = 'All';
+
+function sorted(items, how) {
+    const list = items.slice();
+    if (how === 'protein') list.sort(function (a, b) { return b.protein - a.protein || healthScore(b) - healthScore(a); });
+    else if (how === 'calories') list.sort(function (a, b) { return a.calories - b.calories || healthScore(b) - healthScore(a); });
+    else if (how === 'fat') list.sort(function (a, b) { return a.fat - b.fat || healthScore(b) - healthScore(a); });
+    else list.sort(function (a, b) { return healthScore(b) - healthScore(a) || b.protein - a.protein; });
+    return list;
+}
+
+function render(college) {
+    currentCollege = college;
+    const how = document.getElementById('sortBy').value;
+    const items = foods.filter(function (f) { return college === 'All' || f.college === college; });
+
+    document.getElementById('rankList').innerHTML = sorted(items, how).map(function (f, i) {
+        const score = healthScore(f);
+        return '<li class="rank-row">' +
+            '<div class="rank-num">' + (i + 1) + '</div>' +
+            foodImg(f, 'food-img thumb') +
+            '<div>' +
+                '<div class="rank-name">' + esc(f.name) + '</div>' +
+                '<div class="rank-college">' + esc(f.college) + '</div>' +
+                '<div class="rank-stats">' +
+                    '<span>' + f.calories + ' kcal</span>' +
+                    '<span>' + f.protein + ' g protein</span>' +
+                    '<span>' + f.fat + ' g fat</span>' +
+                    (f.price !== null ? '<span>\u20B9' + f.price + '</span>' : '') +
+                '</div>' +
+            '</div>' +
+            '<div class="rank-score">' +
+                '<div class="score-num">' + score + ' <small>/ 100</small></div>' +
+                '<div class="score-bar" role="img" aria-label="Score ' + score + ' out of 100"><span style="width:' + score + '%"></span></div>' +
+                '<div class="score-tag">' + scoreLabel(score) + '</div>' +
+            '</div>' +
+            '</li>';
+    }).join('');
+}
+
+document.getElementById('sortBy').addEventListener('change', function () { render(currentCollege); });
+const initial = renderCollegeTabs('collegeTabs', render, true);
+render(initial);
+</script>
+</body>
+</html>

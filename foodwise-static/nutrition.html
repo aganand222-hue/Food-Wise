@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Nutritional Analysis</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Nutritional Analysis</h1>
+<p>Approximate nutritional value of each canteen item (per standard serving).</p>
+
+<div id="collegeTabs"></div>
+
+<div class="card">
+    <h2 id="collegeTitle"></h2>
+    <div class="table-scroll">
+    <table>
+        <thead>
+            <tr><th>Photo</th><th>Item</th><th>Calories</th><th>Protein (g)</th><th>Carbs (g)</th><th>Fat (g)</th><th>Vitamins / Minerals</th></tr>
+        </thead>
+        <tbody id="nutritionBody"></tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Why this matters</h2>
+    <p>Students often choose food based on taste, price or convenience rather than nutritional value. Knowing the calorie, protein, carbohydrate and fat content of canteen items helps you build a plate that matches your energy needs for the day, not just your cravings.</p>
+    <p>Want a quick way to compare? See the <a href="healthiest.html">healthiest items ranking</a> or try the <a href="calculator.html">calorie calculator</a>.</p>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/college-tabs.js"></script>
+<script>
+function render(college) {
+    document.getElementById('collegeTitle').textContent = college;
+    const items = foods.filter(function (f) { return f.college === college; });
+    document.getElementById('nutritionBody').innerHTML = items.map(function (f) {
+        return '<tr>' +
+            '<td>' + foodImg(f, 'food-img thumb') + '</td>' +
+            '<td>' + esc(f.name) + '</td>' +
+            '<td>' + f.calories + '</td>' +
+            '<td>' + f.protein + '</td>' +
+            '<td>' + f.carbs + '</td>' +
+            '<td>' + f.fat + '</td>' +
+            '<td>' + esc(f.vitamins) + '</td>' +
+            '</tr>';
+    }).join('');
+}
+const initial = renderCollegeTabs('collegeTabs', render);
+render(initial);
+</script>
+</body>
+</html>

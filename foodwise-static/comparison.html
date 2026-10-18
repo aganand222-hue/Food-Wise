@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Food Comparison</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Food Comparison</h1>
+<p>Pick any two items — even from different colleges — to compare their nutrition side by side.</p>
+
+<div class="card">
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;">
+        <div style="flex:1; min-width:200px;">
+            <label style="font-weight:bold; display:block; margin-bottom:6px;">Item A</label>
+            <select id="itemA" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);"></select>
+        </div>
+        <div style="flex:1; min-width:200px;">
+            <label style="font-weight:bold; display:block; margin-bottom:6px;">Item B</label>
+            <select id="itemB" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);"></select>
+        </div>
+    </div>
+
+    <table>
+        <tr><th></th><th id="nameA">Item A</th><th id="nameB">Item B</th></tr>
+        <tr><td>Photo</td><td id="imgA"></td><td id="imgB"></td></tr>
+        <tr><td>College</td><td id="collegeA"></td><td id="collegeB"></td></tr>
+        <tr><td>Price</td><td id="priceA"></td><td id="priceB"></td></tr>
+        <tr><td>Calories</td><td id="calA"></td><td id="calB"></td></tr>
+        <tr><td>Protein (g)</td><td id="protA"></td><td id="protB"></td></tr>
+        <tr><td>Carbs (g)</td><td id="carbA"></td><td id="carbB"></td></tr>
+        <tr><td>Fat (g)</td><td id="fatA"></td><td id="fatB"></td></tr>
+        <tr><td>Vitamins / Minerals</td><td id="vitA"></td><td id="vitB"></td></tr>
+        <tr><td>Ingredients</td><td id="ingA"></td><td id="ingB"></td></tr>
+    </table>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script>
+const selA = document.getElementById('itemA');
+const selB = document.getElementById('itemB');
+
+foods.forEach((f, i) => {
+    const label = `${f.name} (${f.college})`;
+    selA.add(new Option(label, i));
+    selB.add(new Option(label, i));
+});
+selA.value = 0;
+selB.value = Math.min(1, foods.length - 1);
+
+function render() {
+    const a = foods[selA.value];
+    const b = foods[selB.value];
+    document.getElementById('nameA').textContent = a.name;
+    document.getElementById('imgA').innerHTML = foodImg(a, 'food-img compare-img');
+    document.getElementById('imgB').innerHTML = foodImg(b, 'food-img compare-img');
+    document.getElementById('nameB').textContent = b.name;
+    document.getElementById('collegeA').textContent = a.college;
+    document.getElementById('collegeB').textContent = b.college;
+    document.getElementById('priceA').textContent = a.price !== null ? '\u20B9' + a.price : 'To be confirmed';
+    document.getElementById('priceB').textContent = b.price !== null ? '\u20B9' + b.price : 'To be confirmed';
+    document.getElementById('calA').textContent = a.calories;
+    document.getElementById('calB').textContent = b.calories;
+    document.getElementById('protA').textContent = a.protein;
+    document.getElementById('protB').textContent = b.protein;
+    document.getElementById('carbA').textContent = a.carbs;
+    document.getElementById('carbB').textContent = b.carbs;
+    document.getElementById('fatA').textContent = a.fat;
+    document.getElementById('fatB').textContent = b.fat;
+    document.getElementById('vitA').textContent = a.vitamins;
+    document.getElementById('vitB').textContent = b.vitamins;
+    document.getElementById('ingA').textContent = a.ingredients;
+    document.getElementById('ingB').textContent = b.ingredients;
+}
+selA.addEventListener('change', render);
+selB.addEventListener('change', render);
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Calorie Calculator</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Calorie calculator</h1>
+<p>Find out roughly how many calories you need in a day, then build a plate from the canteen menu to see how much of that it covers.</p>
+
+<div class="card">
+    <h2>Your daily calorie need</h2>
+    <div class="form-grid">
+        <label>Age
+            <input type="number" id="age" min="2" max="100" value="19" inputmode="numeric">
+        </label>
+        <label>Gender
+            <select id="gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </label>
+        <label>Activity level
+            <select id="activity">
+                <option value="0">Sedentary (mostly sitting)</option>
+                <option value="1" selected>Moderately active (some walking or exercise)</option>
+                <option value="2">Active (daily exercise or physical work)</option>
+            </select>
+        </label>
+    </div>
+    <div class="need-box" id="needBox" aria-live="polite"></div>
+</div>
+
+<div class="card">
+    <h2>Build today's plate</h2>
+    <div class="add-row">
+        <label for="itemSelect" class="field-label" style="margin-right:4px;">Canteen item</label>
+        <select id="itemSelect"></select>
+        <button type="button" class="btn" id="addBtn">Add to plate</button>
+    </div>
+
+    <p id="plateEmpty" class="small-note" style="margin-top:14px;">Your plate is empty. Pick an item and add it. Add the same item again to eat more than one serving.</p>
+    <ul class="plate-list" id="plateList"></ul>
+
+    <div id="plateSummary" hidden>
+        <div class="totals" id="totals"></div>
+        <div class="meter" role="img" id="meterWrap"><span id="meterFill"></span></div>
+        <p id="coverage" aria-live="polite" style="margin:0;"></p>
+        <p style="margin:12px 0 0;"><button type="button" class="link-btn" id="clearBtn">Clear plate</button></p>
+    </div>
+</div>
+
+<div class="card">
+    <p class="small-note" style="margin:0;">Calories come from the US dietary guidelines table shown on the <a href="health.html">Health Awareness</a> page, so treat them as a general guide. Food values are approximate, for one serving as listed. For personal advice, talk to a doctor or dietitian.</p>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script>
+// Daily calories by age band, gender and activity (sedentary, moderate, active).
+// Source: the "Daily calorie needs based on age, gender and activity level" table in our nutrition document.
+function R(lo, hi) { return [lo, hi === undefined ? lo : hi]; }
+const CALORIE_BANDS = [
+    { min: 2,  max: 3,   male: [R(1000), R(1000), R(1000)],              female: [R(1000), R(1000), R(1000)] },
+    { min: 4,  max: 8,   male: [R(1200,1400), R(1400,1600), R(1600,2000)], female: [R(1200,1400), R(1400,1600), R(1400,1800)] },
+    { min: 9,  max: 13,  male: [R(1600,2000), R(1800,2200), R(2000,2600)], female: [R(1400,1600), R(1600,2000), R(1800,2200)] },
+    { min: 14, max: 18,  male: [R(2000,2400), R(2400,2800), R(2800,3200)], female: [R(1800), R(2000), R(2400)] },
+    { min: 19, max: 30,  male: [R(2400,2600), R(2600,2800), R(3000)],      female: [R(1800,2000), R(2000,2200), R(2400)] },
+    { min: 31, max: 50,  male: [R(2200,2400), R(2400,2600), R(2800,3000)], female: [R(1800), R(2000), R(2200)] },
+    { min: 51, max: 120, male: [R(2000,2200), R(2200,2400), R(2400,2800)], female: [R(1600), R(1800), R(2000,2200)] }
+];
+
+const ageEl = document.getElementById('age');
+const genderEl = document.getElementById('gender');
+const activityEl = document.getElementById('activity');
+const fmt = function (n) { return Math.round(n).toLocaleString(); };
+
+let need = null;      // { lo, hi, target, band }
+let plate = [];       // [{ i: indexInFoods, qty }]
+
+function computeNeed() {
+    const age = parseInt(ageEl.value, 10);
+    if (!age || age < 2) return null;
+    const band = CALORIE_BANDS.find(function (b) { return age >= b.min && age <= b.max; });
+    if (!band) return null;
+    const range = band[genderEl.value][parseInt(activityEl.value, 10)];
+    return { lo: range[0], hi: range[1], target: Math.round((range[0] + range[1]) / 2), band: band };
+}
+
+function renderNeed() {
+    need = computeNeed();
+    const box = document.getElementById('needBox');
+    if (!need) {
+        box.innerHTML = '<p>Enter an age of 2 or above. For younger children, a doctor can give a better estimate.</p>';
+    } else {
+        const bandLabel = need.band.max >= 120 ? need.band.min + ' and over' : need.band.min + ' to ' + need.band.max;
+        const headline = need.lo === need.hi
+            ? fmt(need.lo) + ' calories a day'
+            : fmt(need.lo) + ' to ' + fmt(need.hi) + ' calories a day';
+        box.innerHTML = '<p class="big">' + headline + '</p>' +
+            '<p class="small-note">For ages ' + bandLabel + '. Your plate below is compared with ' +
+            fmt(need.target) + ' calories' + (need.lo === need.hi ? '.' : ', the middle of this range.') + '</p>';
+    }
+    renderPlate();
+}
+
+// ----- Plate -----
+function fillSelect() {
+    const sel = document.getElementById('itemSelect');
+    sel.innerHTML = colleges.map(function (c) {
+        return '<optgroup label="' + esc(c) + '">' +
+            foods.map(function (f, i) { return { f: f, i: i }; })
+                 .filter(function (x) { return x.f.college === c; })
+                 .map(function (x) { return '<option value="' + x.i + '">' + esc(x.f.name) + ' (' + x.f.calories + ' kcal)</option>'; })
+                 .join('') +
+            '</optgroup>';
+    }).join('');
+}
+
+function renderPlate() {
+    const list = document.getElementById('plateList');
+    const summary = document.getElementById('plateSummary');
+    document.getElementById('plateEmpty').hidden = plate.length > 0;
+    summary.hidden = plate.length === 0;
+
+    list.innerHTML = plate.map(function (p, idx) {
+        const f = foods[p.i];
+        return '<li class="plate-item">' +
+            foodImg(f, 'food-img thumb') +
+            '<div class="grow"><div class="name">' + esc(f.name) + '</div>' +
+                '<div class="small-note">' + esc(f.college) + ', ' + fmt(f.calories * p.qty) + ' kcal</div></div>' +
+            '<div class="qty">' +
+                '<button type="button" data-act="minus" data-idx="' + idx + '" aria-label="One less ' + esc(shortName(f)) + '">&minus;</button>' +
+                '<span aria-live="polite">' + p.qty + '</span>' +
+                '<button type="button" data-act="plus" data-idx="' + idx + '" aria-label="One more ' + esc(shortName(f)) + '">+</button>' +
+            '</div>' +
+            '<button type="button" class="icon-btn" data-act="remove" data-idx="' + idx + '" aria-label="Remove ' + esc(shortName(f)) + '">&times;</button>' +
+            '</li>';
+    }).join('');
+
+    if (plate.length === 0) return;
+
+    const t = plate.reduce(function (s, p) {
+        const f = foods[p.i];
+        s.cal += f.calories * p.qty; s.pro += f.protein * p.qty; s.carb += f.carbs * p.qty; s.fat += f.fat * p.qty;
+        return s;
+    }, { cal: 0, pro: 0, carb: 0, fat: 0 });
+
+    document.getElementById('totals').innerHTML =
+        '<div class="tile"><strong>' + fmt(t.cal) + '</strong><span>Calories</span></div>' +
+        '<div class="tile"><strong>' + t.pro.toFixed(1).replace('.0', '') + ' g</strong><span>Protein</span></div>' +
+        '<div class="tile"><strong>' + t.carb.toFixed(1).replace('.0', '') + ' g</strong><span>Carbs</span></div>' +
+        '<div class="tile"><strong>' + t.fat.toFixed(1).replace('.0', '') + ' g</strong><span>Fat</span></div>';
+
+    const meter = document.getElementById('meterWrap');
+    const cov = document.getElementById('coverage');
+    if (!need) {
+        meter.hidden = true;
+        cov.textContent = 'Enter your age above to see how this plate compares with your daily need.';
+        return;
+    }
+    meter.hidden = false;
+    const pct = Math.round((t.cal / need.target) * 100);
+    document.getElementById('meterFill').style.width = Math.min(pct, 100) + '%';
+    meter.setAttribute('aria-label', 'Plate covers ' + pct + ' percent of daily calories');
+    if (t.cal < need.target) {
+        cov.textContent = 'This plate covers ' + pct + '% of your daily energy, leaving about ' +
+            fmt(need.target - t.cal) + ' calories for the rest of the day.';
+    } else {
+        cov.textContent = 'This plate reaches ' + pct + '% of your daily energy, which is ' +
+            fmt(t.cal - need.target) + ' calories over the middle of your range.';
+    }
+}
+
+document.getElementById('addBtn').addEventListener('click', function () {
+    const i = parseInt(document.getElementById('itemSelect').value, 10);
+    const existing = plate.find(function (p) { return p.i === i; });
+    if (existing) existing.qty += 1; else plate.push({ i: i, qty: 1 });
+    renderPlate();
+});
+
+document.getElementById('plateList').addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx, 10);
+    if (btn.dataset.act === 'plus') plate[idx].qty += 1;
+    else if (btn.dataset.act === 'minus') { plate[idx].qty -= 1; if (plate[idx].qty < 1) plate.splice(idx, 1); }
+    else if (btn.dataset.act === 'remove') plate.splice(idx, 1);
+    renderPlate();
+});
+
+document.getElementById('clearBtn').addEventListener('click', function () { plate = []; renderPlate(); });
+
+['input', 'change'].forEach(function (ev) {
+    ageEl.addEventListener(ev, renderNeed);
+    genderEl.addEventListener(ev, renderNeed);
+    activityEl.addEventListener(ev, renderNeed);
+});
+
+fillSelect();
+renderNeed();
+</script>
+</body>
+</html>

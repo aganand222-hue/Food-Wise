@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Feedback</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Feedback Survey</h1>
+<p>Help us improve FoodWise — this takes under a minute.</p>
+
+<div id="statusBox"></div>
+
+<form class="card" id="feedbackForm">
+
+    <div class="survey-question">
+        <label class="q-title">1. How easy was it to use the FoodWise website?</label>
+        <div class="option-row"><label><input type="radio" name="ease_of_use" value="Very Easy" required> Very Easy</label></div>
+        <div class="option-row"><label><input type="radio" name="ease_of_use" value="Easy"> Easy</label></div>
+        <div class="option-row"><label><input type="radio" name="ease_of_use" value="Not Easy"> Not Easy</label></div>
+    </div>
+
+    <div class="survey-question">
+        <label class="q-title">2. Which features of FoodWise did you like the most? (select all that apply)</label>
+        <div class="check-grid">
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Canteen Food Menu"> Canteen Food Menu</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Nutritional Analysis"> Nutritional Analysis</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Advantages of Canteen Food"> Advantages of Canteen Food</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Ingredients"> Ingredients</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Health Awareness"> Health Awareness</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Food Comparison"> Food Comparison</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Healthiest Items"> Healthiest Items</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Calorie Calculator"> Calorie Calculator</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Compare Canteens"> Compare Canteens</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Search"> Search</label></div>
+            <div class="option-row"><label><input type="checkbox" name="liked_features" value="Food Photos"> Food Photos</label></div>
+        </div>
+    </div>
+
+    <div class="survey-question">
+        <label class="q-title">3. How satisfied are you with your overall experience using FoodWise?</label>
+        <div class="option-row"><label><input type="radio" name="satisfaction" value="Very Satisfied" required> Very Satisfied</label></div>
+        <div class="option-row"><label><input type="radio" name="satisfaction" value="Satisfied"> Satisfied</label></div>
+        <div class="option-row"><label><input type="radio" name="satisfaction" value="Not Satisfied"> Not Satisfied</label></div>
+    </div>
+
+    <div class="survey-question">
+        <label class="q-title">4. How would you rate the overall design and appearance of the website?</label>
+        <div class="rating-row">
+            <label><input type="radio" name="design_rating" value="1" required> 1</label>
+            <label><input type="radio" name="design_rating" value="2"> 2</label>
+            <label><input type="radio" name="design_rating" value="3"> 3</label>
+            <label><input type="radio" name="design_rating" value="4"> 4</label>
+            <label><input type="radio" name="design_rating" value="5"> 5</label>
+        </div>
+    </div>
+
+    <div class="survey-question">
+        <label class="q-title">5. What improvements or additional features would you like to see?</label>
+        <textarea name="suggestions" placeholder="Optional - your thoughts here"></textarea>
+    </div>
+
+    <button type="submit" class="btn" id="submitBtn">Submit Feedback</button>
+</form>
+
+<div class="card">
+    <p style="margin:0;"><a href="results.html">View survey results &rarr;</a></p>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script>
+const form = document.getElementById('feedbackForm');
+const statusBox = document.getElementById('statusBox');
+const submitBtn = document.getElementById('submitBtn');
+
+if (SUPABASE_NOT_CONFIGURED) {
+    statusBox.innerHTML = '<div class="error-box">' + SUPABASE_CONFIG_MESSAGE + '</div>';
+    submitBtn.disabled = true;
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusBox.innerHTML = '';
+
+    const data = new FormData(form);
+    const likedFeatures = data.getAll('liked_features');
+
+    if (!data.get('ease_of_use') || !data.get('satisfaction') || !data.get('design_rating') || likedFeatures.length === 0) {
+        statusBox.innerHTML = '<div class="error-box">Please answer all required questions before submitting.</div>';
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    try {
+        const { error } = await supabaseClient.from('feedback').insert({
+            ease_of_use: data.get('ease_of_use'),
+            liked_features: likedFeatures.join(', '),
+            satisfaction: data.get('satisfaction'),
+            design_rating: parseInt(data.get('design_rating'), 10),
+            suggestions: data.get('suggestions') || null
+        });
+
+        if (error) throw error;
+
+        statusBox.innerHTML = '<div class="success-box">Thank you! Your feedback has been recorded.</div>';
+        form.reset();
+    } catch (err) {
+        console.error(err);
+        statusBox.innerHTML = '<div class="error-box">Something went wrong saving your feedback: ' +
+            (err && err.message ? err.message : 'unknown error') +
+            '. ' + (/invalid path/i.test((err && err.message) || '')
+                ? 'Your SUPABASE_URL in js/supabase-config.js should end at ".supabase.co" with nothing after it (remove any "/rest/v1/").'
+                : 'Check the browser console (F12) for details, and double-check supabase-config.js and that you ran supabase-schema.sql.') +
+            '</div>';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Feedback';
+    }
+});
+</script>
+</body>
+</html>

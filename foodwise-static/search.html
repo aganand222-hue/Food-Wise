@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Search</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Search and food discovery</h1>
+<p>Find the ingredients and nutrition for any canteen item, across every canteen.</p>
+
+<div class="card">
+    <label for="searchBox" class="field-label">Food name</label>
+    <input type="text" id="searchBox" placeholder="Try dosa, roll or samosa"
+        style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); font-size:15px; margin:6px 0 4px;">
+</div>
+<div id="results"></div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script>
+const box = document.getElementById('results');
+const input = document.getElementById('searchBox');
+
+function card(f) {
+    return '<div class="card"><div class="dish-row" style="padding-top:0; border:none;">' +
+        foodImg(f, 'food-img thumb-lg') +
+        '<div>' +
+            '<h3>' + esc(f.name) + ' <span style="font-size:13px; font-weight:normal; color:var(--muted);">' + esc(f.college) + '</span></h3>' +
+            '<p>' + priceHtml(f) + '</p>' +
+            '<p><strong>Ingredients:</strong> ' + esc(f.ingredients) + '</p>' +
+            '<p><strong>Calories:</strong> ' + f.calories + ' &nbsp; <strong>Protein:</strong> ' + f.protein + ' g &nbsp; ' +
+               '<strong>Carbs:</strong> ' + f.carbs + ' g &nbsp; <strong>Fat:</strong> ' + f.fat + ' g</p>' +
+            '<p><strong>Vitamins / minerals:</strong> ' + esc(f.vitamins) + '</p>' +
+        '</div></div></div>';
+}
+
+function renderResults(query) {
+    const q = query.trim().toLowerCase();
+    if (q === '') {
+        box.innerHTML = '<p style="color:var(--muted);">Start typing to search the canteen menus.</p>';
+        return;
+    }
+    const matches = foods.filter(function (f) { return f.name.toLowerCase().indexOf(q) !== -1; });
+    box.innerHTML = matches.length === 0
+        ? '<p style="color:var(--muted);">No items match "' + esc(query) + '". Try a shorter word, like "vada" instead of "vada pav".</p>'
+        : matches.map(card).join('');
+}
+
+input.addEventListener('input', function (e) { renderResults(e.target.value); });
+
+// Photo tiles on other pages link here with ?q=name
+const startQ = new URLSearchParams(window.location.search).get('q');
+if (startQ) input.value = startQ;
+renderResults(input.value);
+</script>
+</body>
+</html>

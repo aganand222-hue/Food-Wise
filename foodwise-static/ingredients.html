@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Ingredients</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<h1>Ingredients</h1>
+<p>What goes into each canteen item, collected from canteen staff.</p>
+
+<div id="collegeTabs"></div>
+
+<div class="card">
+    <h2 id="collegeTitle"></h2>
+    <div id="ingredientsList"></div>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/college-tabs.js"></script>
+<script>
+function render(college) {
+    document.getElementById('collegeTitle').textContent = college;
+    const items = foods.filter(function (f) { return f.college === college; });
+    document.getElementById('ingredientsList').innerHTML = items.map(function (f) {
+        return '<div class="dish-row">' +
+            foodImg(f, 'food-img thumb-lg') +
+            '<div><h3>' + esc(f.name) + '</h3><p>' + esc(f.ingredients) + '</p></div>' +
+            '</div>';
+    }).join('');
+}
+const initial = renderCollegeTabs('collegeTabs', render);
+render(initial);
+</script>
+</body>
+</html>

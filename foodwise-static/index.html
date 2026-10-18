@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise - Home</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="page-content">
+
+<div class="hero">
+    <h1>Welcome to FoodWise</h1>
+    <p>Understand what's really in your canteen food: menu, nutrition, ingredients and healthier choices, across MVLU College and Arnold College.</p>
+    <a href="menu.html" class="btn">See the menus</a>
+</div>
+
+<div class="card">
+    <h2>On the menu</h2>
+    <div id="featured"></div>
+    <p style="margin:14px 0 0;"><a href="menu.html">Browse every item</a></p>
+</div>
+
+<div class="card">
+    <h2>What you'll find here</h2>
+    <div class="feature-grid">
+        <a class="feature-link" href="menu.html"><strong>Canteen Food Menu</strong><span>Every item and price, canteen by canteen</span></a>
+        <a class="feature-link" href="ingredients.html"><strong>Ingredients</strong><span>What goes into each dish</span></a>
+        <a class="feature-link" href="nutrition.html"><strong>Nutritional Analysis</strong><span>Calories, protein, carbs, fat and vitamins</span></a>
+        <a class="feature-link" href="healthiest.html"><strong>Healthiest Items</strong><span>Every item ranked by a simple nutrition score</span></a>
+        <a class="feature-link" href="calculator.html"><strong>Calorie Calculator</strong><span>Your daily need, and how a canteen plate measures up</span></a>
+        <a class="feature-link" href="canteens.html"><strong>Compare Canteens</strong><span>Price, calories and nutrition side by side</span></a>
+        <a class="feature-link" href="comparison.html"><strong>Food Comparison</strong><span>Pick any two items and compare them</span></a>
+        <a class="feature-link" href="advantages.html"><strong>Advantages of Canteen Food</strong><span>Why a canteen meal can be a smart choice</span></a>
+        <a class="feature-link" href="health.html"><strong>Health Awareness</strong><span>Balanced diets, portion control, calorie tables</span></a>
+        <a class="feature-link" href="search.html"><strong>Search</strong><span>Look up any canteen item</span></a>
+        <a class="feature-link" href="results.html"><strong>Survey Results</strong><span>What other students think of FoodWise</span></a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Help us improve</h2>
+    <p>FoodWise is a student project. Your feedback shapes what we build next, and it takes under a minute.</p>
+    <a href="feedback.html" class="btn">Share your feedback</a>
+</div>
+
+</main>
+
+<div id="site-footer"></div>
+<script src="js/include.js"></script>
+<script src="js/food-data.js"></script>
+<script src="js/common.js"></script>
+<script>
+renderFoodStrip('featured', ['misal-pav', 'masala-dosa', 'vada-pav', 'veg-roll', 'idli', 'besan-chilla']);
+</script>
+</body>
+</html>
